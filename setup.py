@@ -1,11 +1,10 @@
 from setuptools import setup
-# To use a consistent encoding
 
 
 setup(
     name="miform",
     version=0.1,
-    description="Formal Verification Routines for Migen",
+    description="Formal Verification Helpers for Migen",
     author="William D. Jones",
     author_email="thor0505@comcast.net",
     license="BSD",
