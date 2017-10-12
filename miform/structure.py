@@ -46,6 +46,8 @@ class Formal(Special):
         for c in formal.conc:
             if isinstance(c, Assert):
                 r += "assert property (" + pe(c.cond) + ");\n"
+            elif isinstance(c, Assume):
+                r += "assume property (" + pe(c.cond) + ");\n"
         r += "`endif\n"
         return r
 
@@ -66,6 +68,23 @@ class Assert(_Statement, _FormalStatement):
     >>> If(c,
     ...     Assert(a == b)
     ... )
+    """
+    def __init__(self, cond):
+        self.cond = wrap(cond)
+
+
+class Assume(_Statement, _FormalStatement):
+    """Assume a condition holds
+
+    Parameters
+    ----------
+    cond : _Value(1), in
+        Condition
+
+    Examples
+    --------
+    >>> a = Signal()
+    >>> Assume(a == 0)
     """
     def __init__(self, cond):
         self.cond = wrap(cond)
