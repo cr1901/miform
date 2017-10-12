@@ -18,9 +18,10 @@ class Hello(Module):
         f.add(Assert(self.cnt < 10))
         f.add(Assume(self.cnt != 9))
 
-        f.add(If(~self.en,
-            Assert(self.cnt == 0))
-        )
+        f.add(If(self.en,
+            Assert(self.cnt == C(0, 4))
+        ))
         self.specials += f
 
-print(verilog.convert(Hello()))
+m = Hello()
+print(verilog.convert(m, ios={m.en, m.cnt}))
