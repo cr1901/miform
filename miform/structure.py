@@ -1,6 +1,10 @@
 from migen.fhdl.structure import _Statement, wrap, _check_statement
 from migen.fhdl.specials import Special
-from migen.fhdl.verilog import _printexpr as verilog_printexpr
+from migen.fhdl.verilog import _AT_BLOCKING, _printexpr as verilog_printexpr
+from migen.fhdl.module import _flat_list
+
+
+import miform.verilog
 
 class _FormalStatement:
     pass
@@ -36,6 +40,9 @@ class Formal(Special):
         # checked for all time- are by definition concurrent.
         if isinstance(statement, _FormalStatement):
             self.conc.append(statement)
+        else:
+            # TODO: ensure at least one statement in list is a _FormalStatement.
+            self.imm += _flat_list(statement)
 
     @staticmethod
     def emit_verilog(formal, ns, add_data_file):
@@ -48,6 +55,14 @@ class Formal(Special):
                 r += "assert property (" + pe(c.cond) + ");\n"
             elif isinstance(c, Assume):
                 r += "assume property (" + pe(c.cond) + ");\n"
+            else:
+                TypeError("Only Assume and Assert supported for concurrent assertions.")
+
+        r += "\n"
+        for i in formal.imm:
+            r += "always @(*) begin\n"
+            r += miform.verilog._formalprintnode(ns, _AT_BLOCKING, 1, i)
+            r += "end\n"
         r += "`endif\n"
         return r
 
