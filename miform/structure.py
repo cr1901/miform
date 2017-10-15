@@ -9,6 +9,15 @@ import miform.verilog
 class _FormalStatement:
     pass
 
+
+class _FormalTask:
+    def __init__(self):
+        pass
+
+    def to_system_verilog(self):
+        raise NotImplementedError
+
+
 class Formal(Special):
     """
     The Migen Special for formal verification. This is mainly required to
@@ -19,6 +28,8 @@ class Formal(Special):
         self.init = list()
         self.imm = list()
         self.conc = list()
+        self.glob = list()
+        self.sync = dict()
 
     """
     Add an assertion or assumption for formal verification purposes.
@@ -50,6 +61,21 @@ class Formal(Special):
             # TODO: ensure at least one statement in list is a _FormalStatement.
             self.imm += _flat_list(statement)
 
+
+    """Add an assertion The SystemVerilog $globalclock task. This is the implied clock
+    during formal verification; in `yosys`, if the `clk2dfflogic` pass
+    is executed, all other Migen clock domains, including the default "sys"
+    clock domain, become synchronous inputs relative to the $global_clock.
+
+    Parameters
+    ----------
+    statement : _Statement(), in
+    A Migen Statement that is asserted/assumed each tick of the $global_clock.
+    """
+    def add_global(self, statement):
+        self.glob += _flat_list(statement)
+
+
     @staticmethod
     def emit_verilog(formal, ns, add_data_file):
         def pe(e):
@@ -76,6 +102,13 @@ class Formal(Special):
             r += "always @(*) begin\n"
             r += miform.verilog._formalprintnode(ns, _AT_BLOCKING, 1, i)
             r += "end\n"
+
+        r += "\n"
+        for g in formal.glob:
+            r += "always @($global_clock) begin\n"
+            r += miform.verilog._formalprintnode(ns, _AT_BLOCKING, 1, g)
+            r += "end\n"
+
         r += "`endif\n"
         return r
 
@@ -124,3 +157,15 @@ class Assume(_Statement, _FormalStatement):
     def __init__(self, cond, initial=False):
         self.cond = wrap(cond)
         self.initial=initial
+
+
+# class GlobalClock(_Statement, _FormalStatement, _FormalTask):
+#     """The SystemVerilog $globalclock task. This is the implied clock
+#     during formal verification; in `yosys`, if the `clk2dfflogic` pass
+#     is executed, all clock domains become synchronous relative to the
+#     global clock."""
+#     def __init__(self):
+#         pass
+#
+#     def to_system_verilog(self):
+#         return "$"
