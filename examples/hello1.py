@@ -17,6 +17,7 @@ class Hello(Module):
         f = Formal()
         f.add(Assert(self.cnt < 10))
         f.add(Assume(self.cnt != 9))
+        f.add(Assume(self.en == 0, True))
 
         f.add(If(self.en,
             Assert(self.cnt == C(0, 4))

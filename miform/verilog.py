@@ -3,6 +3,8 @@ import migen.fhdl.verilog
 import miform.structure
 
 # XXX: Hack to extend Migen's Verilog generation.
+# XXX: I can't prevent someone from trying to use Assert() outside of
+# formal blocks.
 _oldprintnode = migen.fhdl.verilog._printnode
 
 def _formalprintnode(ns, at, level, node):
@@ -10,7 +12,6 @@ def _formalprintnode(ns, at, level, node):
         return migen.fhdl.verilog._printexpr(ns, e)[0]
 
     if isinstance(node, miform.structure._FormalStatement):
-        # return "test"
         r = "\t"*level
         if isinstance(node, miform.structure.Assert):
             r += "assert (" + pe(node.cond) + ");\n"

@@ -16,6 +16,7 @@ class Formal(Special):
     """
     def __init__(self):
         Special.__init__(self)
+        self.init = list()
         self.imm = list()
         self.conc = list()
 
@@ -36,10 +37,15 @@ class Formal(Special):
         if not _check_statement(statement):
             raise TypeError("Input to Formal specials must be Migen statements")
 
-        # Top-level formal asserts/assumes not bound by other events- i.e.
-        # checked for all time- are by definition concurrent.
         if isinstance(statement, _FormalStatement):
-            self.conc.append(statement)
+            if statement.initial:
+                # Initial asserts/assumes look similar to concurrent, though
+                # the initial "block" is considered an event (I think?).
+                self.init.append(statement)
+            else:
+                # Top-level formal asserts/assumes not bound by other events- i.e.
+                # checked for all time- are by definition concurrent.
+                self.conc.append(statement)
         else:
             # TODO: ensure at least one statement in list is a _FormalStatement.
             self.imm += _flat_list(statement)
@@ -50,6 +56,13 @@ class Formal(Special):
             return verilog_printexpr(ns, e)[0]
 
         r = "`ifdef FORMAL\n"
+        for i in formal.init:
+            if isinstance(i, Assert):
+                r += "initial assert (" + pe(i.cond) + ");\n"
+            elif isinstance(i, Assume):
+                r += "initial assume (" + pe(i.cond) + ");\n"
+
+        r += "\n"
         for c in formal.conc:
             if isinstance(c, Assert):
                 r += "assert property (" + pe(c.cond) + ");\n"
@@ -74,6 +87,9 @@ class Assert(_Statement, _FormalStatement):
     ----------
     cond : _Value(1), in
         Condition
+    initial : bool, in
+        Only test the assertion on the first cycle. Defaults to false.
+        Ignored if the assert is not continuous.
 
     Examples
     --------
@@ -84,8 +100,9 @@ class Assert(_Statement, _FormalStatement):
     ...     Assert(a == b)
     ... )
     """
-    def __init__(self, cond):
+    def __init__(self, cond, initial=False):
         self.cond = wrap(cond)
+        self.initial = initial
 
 
 class Assume(_Statement, _FormalStatement):
@@ -95,11 +112,15 @@ class Assume(_Statement, _FormalStatement):
     ----------
     cond : _Value(1), in
         Condition
+    initial : bool, in
+        Only assume `cond` on the first cycle. Defaults to false.
+        Ignored if the assume is not continuous.
 
     Examples
     --------
     >>> a = Signal()
     >>> Assume(a == 0)
     """
-    def __init__(self, cond):
+    def __init__(self, cond, initial=False):
         self.cond = wrap(cond)
+        self.initial=initial
