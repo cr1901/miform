@@ -19,7 +19,7 @@ def _formalprintnode(ns, at, level, node):
         if isinstance(node, miform.structure.Assert):
             r += "assert (" + pe(node.cond) + ");\n"
         elif isinstance(node, miform.structure.Assume):
-            r += "assert (" + pe(node.cond) + ");\n"
+            r += "assume (" + pe(node.cond) + ");\n"
         else:
             TypeError("Unsupported _FormalStatement within block.")
         return r
