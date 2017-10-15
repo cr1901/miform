@@ -1,7 +1,7 @@
 from migen.fhdl.structure import _Statement, wrap, _check_statement
 from migen.fhdl.specials import Special
 from migen.fhdl.verilog import _AT_BLOCKING, _printexpr as verilog_printexpr
-from migen.fhdl.module import _flat_list
+from migen.fhdl.module import _flat_list, _cd_append
 
 
 import miform.verilog
@@ -62,7 +62,7 @@ class Formal(Special):
             self.imm += _flat_list(statement)
 
 
-    """Add an assertion The SystemVerilog $globalclock task. This is the implied clock
+    """Add an assertion using the SystemVerilog $globalclock task. This is the implied clock
     during formal verification; in `yosys`, if the `clk2dfflogic` pass
     is executed, all other Migen clock domains, including the default "sys"
     clock domain, become synchronous inputs relative to the $global_clock.
@@ -75,6 +75,19 @@ class Formal(Special):
     def add_global(self, statement):
         self.glob += _flat_list(statement)
 
+    """Add an assertion that is checked on the positive-edge of the input
+    clock domain.
+
+    Parameters
+    ----------
+    cd : str, in
+    Name of the clock-domain for which the assertion/assumption is checked.
+
+    statement : _Statement(), in
+    A Migen Statement that is asserted/assumed each positive-edge of the named `cd`.
+    """
+    def add_sync(self, cd, statement):
+        _cd_append(self.sync, cd, statement)
 
     @staticmethod
     def emit_verilog(formal, ns, add_data_file):
@@ -102,6 +115,9 @@ class Formal(Special):
             r += "always @(*) begin\n"
             r += miform.verilog._formalprintnode(ns, _AT_BLOCKING, 1, i)
             r += "end\n"
+
+        r += "\n"
+        r += miform.verilog._formalprintsync(formal, ns)
 
         r += "\n"
         for g in formal.glob:

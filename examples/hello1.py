@@ -6,7 +6,14 @@ class Hello(Module):
     def __init__(self):
         self.en = Signal(1)
         self.cnt = Signal(4)
+
+        last_clk = Signal(1)
+
         self.sync += [
+            # XXX: If commented out, last_clk is never placed into Verilog
+            # namespace. Formal() special somehow needs to add it to
+            # namespace.
+            last_clk.eq(ClockSignal("sys")),
             If(self.en,
                 self.cnt.eq(self.cnt + 1)
             ).Else(
@@ -22,6 +29,20 @@ class Hello(Module):
         f.add(If(self.en,
             Assert(self.cnt == C(0, 4))
         ))
+
+        f.add_sync("sys",
+            [
+                last_clk.eq(0)
+            ]
+        )
+
+        f.add_global(
+            [
+                Assume(last_clk == 0),
+                # XXX: Expression of unrecognized type ClockSignal
+                # Assume(last_clk != ClockSignal("sys"))
+            ]
+        )
         self.specials += f
 
 m = Hello()
